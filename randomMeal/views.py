@@ -28,7 +28,7 @@ class RandomMealConfigList(generics.ListCreateAPIView):
     queryset = FoodConfigParam.objects.all()
     serializer_class = FoodConfigParamSerializer
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response(serializer.data)
@@ -42,9 +42,30 @@ class AuthView(generics.GenericAPIView):
     permission_classes = ()
     serializer_class = AuthSerializer
     def post(self, request):
-        serializer = AuthSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(uuid=serializer.data['uuid'])
+        if not user:
+            raise AuthenticationFailed()
+        payload = jwt_payload_handler(user)
+        return Response({
+            'token': jwt_encode_handler(payload),
+        })
+
+class RegisterAuthView(generics.GenericAPIView):
+    permission_classes = ()
+    serializer_class = AuthSerializer
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if User.objects.filter(uuid=serializer.data['uuid']):
+            message = {'detail': 'すでにそのユーザーは登録済みです。'}
+            return Response(message)
+
+        user = User.objects.create_user(uuid=serializer.data['uuid'])
+        user.save()
+        
         if not user:
             raise AuthenticationFailed()
         payload = jwt_payload_handler(user)

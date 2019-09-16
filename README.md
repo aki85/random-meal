@@ -8,6 +8,9 @@
 python manage.py createsuperuser
 ※パスワードは登録するが使わない
 
+* signup
+curl http://localhost:8000/signup/ -d "uuid=yourname"
+
 * signin
 curl http://localhost:8000/signin/ -d "uuid=yourname"
 
